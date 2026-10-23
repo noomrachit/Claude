@@ -5,7 +5,9 @@ import { EmptyState } from '@/components/EmptyState'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { Spinner } from '@/components/Spinner'
 import { btnClass } from '@/components/ui'
+import { BoardView } from '@/features/boards/BoardView'
 import { useBoard } from '@/features/boards/hooks'
+import { canEdit } from '@/features/boards/permissions'
 import { MembersDialog } from '@/features/boards/MembersDialog'
 import { t } from '@/lib/strings'
 
@@ -32,10 +34,13 @@ export default function BoardPage() {
         ) : (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h1 className="text-xl font-semibold">{board.title}</h1>
+              <h1 className="text-xl font-semibold">
+                {board.title}
+                {!canEdit(board.role) && <span className="ml-2 text-sm font-normal text-slate-500">({t.boards.readOnly})</span>}
+              </h1>
               <button type="button" className={btnClass} onClick={() => setShowMembers(true)}>{t.boards.members}</button>
             </div>
-            <EmptyState title={t.boards.listsComingSoon} />
+            <BoardView boardId={board.id} canEdit={canEdit(board.role)} />
             {showMembers && (
               <MembersDialog
                 boardId={board.id}
