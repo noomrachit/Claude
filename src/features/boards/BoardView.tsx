@@ -20,6 +20,7 @@ import { AddItemForm } from '@/components/AddItemForm'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { Spinner } from '@/components/Spinner'
+import { useBoardRealtime } from '@/features/realtime/useBoardRealtime'
 import { CardDetailModal } from '@/features/cards/CardDetailModal'
 import { buildCardMeta } from '@/features/cards/cardMeta'
 import { CardView } from '@/features/cards/CardTile'
@@ -59,6 +60,7 @@ interface Props {
 export function BoardView({ boardId, canEdit, isOwner }: Props) {
   const { data, isPending, isError, refetch } = useBoardContent(boardId)
   const members = useMembers(boardId)
+  const realtime = useBoardRealtime(boardId)
   const [params, setParams] = useSearchParams()
   const openCardId = params.get('card')
   const closeCard = useCallback(() => setParams((p) => { p.delete('card'); return p }, { replace: true }), [setParams])
@@ -140,6 +142,11 @@ export function BoardView({ boardId, canEdit, isOwner }: Props) {
 
   return (
     <div className="space-y-3">
+      {realtime === 'offline' && (
+        <p role="status" className="rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+          {t.boards.offline}
+        </p>
+      )}
       {failed && (
         <div role="alert" className="flex items-center justify-between gap-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
           <span>{t.cards.saveFailed}</span>

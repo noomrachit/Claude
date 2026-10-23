@@ -11,6 +11,13 @@ interface Props {
 
 export function DescriptionSection({ value, canEdit, onSave }: Props) {
   const [draft, setDraft] = useState(value)
+  const [focused, setFocused] = useState(false)
+  const [seen, setSeen] = useState(value)
+  // Pull in changes made by others, but never overwrite what the user is typing.
+  if (value !== seen) {
+    setSeen(value)
+    if (!focused) setDraft(value)
+  }
   return (
     <Section title={t.detail.description}>
       <textarea
@@ -20,7 +27,11 @@ export function DescriptionSection({ value, canEdit, onSave }: Props) {
         placeholder={t.detail.descriptionPlaceholder}
         aria-label={t.detail.description}
         onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => draft !== value && onSave(draft)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => {
+          setFocused(false)
+          if (draft !== value) onSave(draft)
+        }}
       />
     </Section>
   )
