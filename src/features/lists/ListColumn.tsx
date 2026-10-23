@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { AddItemForm } from '@/components/AddItemForm'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { InlineTitle } from '@/components/InlineTitle'
+import { EMPTY_META, type CardMeta } from '@/features/cards/cardMeta'
 import { CardTile } from '@/features/cards/CardTile'
 import { t } from '@/lib/strings'
 import type { Card, List } from '@/types'
@@ -11,11 +12,12 @@ import type { Card, List } from '@/types'
 export interface ListColumnProps {
   list: List
   cards: Card[]
+  metaByCard: Map<string, CardMeta>
   canEdit: boolean
   onRename: (title: string) => void
   onDelete: () => void
   onAddCard: (title: string) => void
-  onRenameCard: (cardId: string, title: string) => void
+  onOpenCard: (cardId: string) => void
   onDeleteCard: (cardId: string) => void
 }
 
@@ -31,7 +33,7 @@ export function ListOverlay({ list, count }: { list: List; count: number }) {
   )
 }
 
-export function ListColumn({ list, cards, canEdit, onRename, onDelete, onAddCard, onRenameCard, onDeleteCard }: ListColumnProps) {
+export function ListColumn({ list, cards, metaByCard, canEdit, onRename, onDelete, onAddCard, onOpenCard, onDeleteCard }: ListColumnProps) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: list.id,
     data: { type: 'list' },
@@ -72,8 +74,9 @@ export function ListColumn({ list, cards, canEdit, onRename, onDelete, onAddCard
             <CardTile
               key={card.id}
               card={card}
+              meta={metaByCard.get(card.id) ?? EMPTY_META}
               canEdit={canEdit}
-              onRename={(title) => onRenameCard(card.id, title)}
+              onOpen={() => onOpenCard(card.id)}
               onDelete={() => onDeleteCard(card.id)}
             />
           ))}

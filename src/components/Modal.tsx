@@ -4,11 +4,12 @@ import { t } from '@/lib/strings'
 interface ModalProps {
   title: string
   onClose: () => void
+  wide?: boolean
   children: ReactNode
 }
 
 /** Accessible modal built on the native <dialog>: focus trap, Esc to close, backdrop click to close. */
-export function Modal({ title, onClose, children }: ModalProps) {
+export function Modal({ title, onClose, wide, children }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -23,7 +24,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
       aria-label={title}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
-      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-lg bg-white p-0 text-slate-900 shadow-xl backdrop:bg-black/50 dark:bg-slate-800 dark:text-slate-100"
+      className={`m-auto max-h-[90dvh] w-[calc(100%-2rem)] ${wide ? 'max-w-2xl' : 'max-w-md'} overflow-y-auto rounded-lg bg-white p-0 text-slate-900 shadow-xl backdrop:bg-black/50 dark:bg-slate-800 dark:text-slate-100`}
     >
       <div className="space-y-4 p-5">
         <div className="flex items-start justify-between gap-4">

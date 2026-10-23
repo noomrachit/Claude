@@ -14,15 +14,19 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core'
 import { horizontalListSortingStrategy, SortableContext, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { AddItemForm } from '@/components/AddItemForm'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { Spinner } from '@/components/Spinner'
+import { CardDetailModal } from '@/features/cards/CardDetailModal'
+import { buildCardMeta } from '@/features/cards/cardMeta'
 import { CardView } from '@/features/cards/CardTile'
 import { ListColumn, ListOverlay } from '@/features/lists/ListColumn'
 import { t } from '@/lib/strings'
 import { positionAfter, useBoardContent, useBoardMutations } from './boardContent'
+import { useMembers } from './hooks'
 import {
   buildColumns,
   findContainer,
@@ -49,10 +53,15 @@ const collisionDetection: CollisionDetection = (args) => {
 interface Props {
   boardId: string
   canEdit: boolean
+  isOwner: boolean
 }
 
-export function BoardView({ boardId, canEdit }: Props) {
+export function BoardView({ boardId, canEdit, isOwner }: Props) {
   const { data, isPending, isError, refetch } = useBoardContent(boardId)
+  const members = useMembers(boardId)
+  const [params, setParams] = useSearchParams()
+  const openCardId = params.get('card')
+  const closeCard = useCallback(() => setParams((p) => { p.delete('card'); return p }, { replace: true }), [setParams])
   const [failed, setFailed] = useState(false)
   const m = useBoardMutations(boardId, () => setFailed(true))
 
@@ -71,6 +80,15 @@ export function BoardView({ boardId, canEdit }: Props) {
   const lists = useMemo(() => data?.lists ?? [], [data?.lists])
   const savedColumns = useMemo(() => buildColumns(lists, data?.cards ?? []), [lists, data?.cards])
   const columns = dragColumns ?? savedColumns
+
+  const memberOptions = useMemo(
+    () => (members.data ?? []).map((mem) => ({ id: mem.user_id, name: mem.profiles?.display_name || mem.profiles?.email || t.detail.unknownUser })),
+    [members.data],
+  )
+  const metaByCard = useMemo(
+    () => (data ? buildCardMeta(data, new Map(memberOptions.map((o) => [o.id, o.name]))) : new Map()),
+    [data, memberOptions],
+  )
 
   if (isPending) return <Spinner />
   if (isError) return <ErrorBanner message={t.cards.loadError} onRetry={() => void refetch()} />
@@ -145,13 +163,14 @@ export function BoardView({ boardId, canEdit }: Props) {
                 key={list.id}
                 list={list}
                 cards={columns[list.id] ?? []}
+                metaByCard={metaByCard}
                 canEdit={canEdit}
                 onRename={(title) => m.renameList.mutate({ id: list.id, title })}
                 onDelete={() => m.deleteList.mutate({ id: list.id })}
                 onAddCard={(title) =>
                   m.addCard.mutate({ id: crypto.randomUUID(), listId: list.id, title, position: positionAfter(columns[list.id] ?? []) })
                 }
-                onRenameCard={(id, title) => m.renameCard.mutate({ id, title })}
+                onOpenCard={(id) => setParams((p) => { p.set('card', id); return p })}
                 onDeleteCard={(id) => m.deleteCard.mutate({ id })}
               />
             ))}
@@ -163,9 +182,22 @@ export function BoardView({ boardId, canEdit }: Props) {
           )}
         </div>
         <DragOverlay>
-          {activeCard ? <CardView card={activeCard} /> : activeList ? <ListOverlay list={activeList} count={columns[activeList.id]?.length ?? 0} /> : null}
+          {activeCard ? <CardView card={activeCard} meta={metaByCard.get(activeCard.id)} /> : activeList ? <ListOverlay list={activeList} count={columns[activeList.id]?.length ?? 0} /> : null}
         </DragOverlay>
       </DndContext>
+
+      {openCardId && data && (
+        <CardDetailModal
+          boardId={boardId}
+          cardId={openCardId}
+          content={data}
+          members={memberOptions}
+          canEdit={canEdit}
+          isOwner={isOwner}
+          onClose={closeCard}
+          onError={() => setFailed(true)}
+        />
+      )}
     </div>
   )
 }

@@ -7,7 +7,7 @@ import { Spinner } from '@/components/Spinner'
 import { btnClass } from '@/components/ui'
 import { BoardView } from '@/features/boards/BoardView'
 import { useBoard } from '@/features/boards/hooks'
-import { canEdit } from '@/features/boards/permissions'
+import { canEdit, isOwner } from '@/features/boards/permissions'
 import { MembersDialog } from '@/features/boards/MembersDialog'
 import { t } from '@/lib/strings'
 
@@ -40,7 +40,7 @@ export default function BoardPage() {
               </h1>
               <button type="button" className={btnClass} onClick={() => setShowMembers(true)}>{t.boards.members}</button>
             </div>
-            <BoardView boardId={board.id} canEdit={canEdit(board.role)} />
+            <BoardView boardId={board.id} canEdit={canEdit(board.role)} isOwner={isOwner(board.role)} />
             {showMembers && (
               <MembersDialog
                 boardId={board.id}

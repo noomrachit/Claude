@@ -5,21 +5,46 @@ import * as listsApi from '@/features/lists/api'
 import { byPosition, positionBetween } from '@/lib/position'
 import { queryKeys } from '@/lib/queryKeys'
 import { supabase } from '@/lib/supabase/client'
-import type { Card, List } from '@/types'
+import type { Card, CardAssignee, CardLabel, ChecklistItem, Label, List } from '@/types'
 
 export interface BoardContent {
   lists: List[]
   cards: Card[]
+  labels: Label[]
+  cardLabels: CardLabel[]
+  cardAssignees: CardAssignee[]
+  checklistItems: ChecklistItem[]
+}
+
+/** Drops the given cards and everything that hangs off them. */
+export function withoutCards(c: BoardContent, cardIds: Set<string>): BoardContent {
+  return {
+    ...c,
+    cards: c.cards.filter((x) => !cardIds.has(x.id)),
+    cardLabels: c.cardLabels.filter((x) => !cardIds.has(x.card_id)),
+    cardAssignees: c.cardAssignees.filter((x) => !cardIds.has(x.card_id)),
+    checklistItems: c.checklistItems.filter((x) => !cardIds.has(x.card_id)),
+  }
 }
 
 async function fetchBoardContent(boardId: string): Promise<BoardContent> {
-  const [lists, cards] = await Promise.all([
+  const [lists, cards, labels, cardLabels, cardAssignees, checklistItems] = await Promise.all([
     supabase.from('lists').select('*').eq('board_id', boardId).order('position'),
     supabase.from('cards').select('*').eq('board_id', boardId).is('archived_at', null).order('position'),
+    supabase.from('labels').select('*').eq('board_id', boardId).order('created_at'),
+    supabase.from('card_labels').select('*').eq('board_id', boardId),
+    supabase.from('card_assignees').select('*').eq('board_id', boardId),
+    supabase.from('checklist_items').select('*').eq('board_id', boardId).order('position'),
   ])
-  if (lists.error) throw lists.error
-  if (cards.error) throw cards.error
-  return { lists: lists.data.sort(byPosition), cards: cards.data.sort(byPosition) }
+  for (const r of [lists, cards, labels, cardLabels, cardAssignees, checklistItems]) if (r.error) throw r.error
+  return {
+    lists: lists.data!.sort(byPosition),
+    cards: cards.data!.sort(byPosition),
+    labels: labels.data!,
+    cardLabels: cardLabels.data!,
+    cardAssignees: cardAssignees.data!,
+    checklistItems: checklistItems.data!.sort(byPosition),
+  }
 }
 
 export function useBoardContent(boardId: string) {
@@ -32,7 +57,7 @@ const nowIso = () => new Date().toISOString()
  * A mutation that updates the cached board content immediately, restores the
  * previous snapshot if the request fails, and refetches when settled.
  */
-function useOptimistic<V>(
+export function useOptimistic<V>(
   boardId: string,
   mutationFn: (vars: V) => Promise<void>,
   apply: (content: BoardContent, vars: V) => BoardContent,
@@ -89,7 +114,10 @@ export function useBoardMutations(boardId: string, onError?: () => void) {
     deleteList: useOptimistic<{ id: string }>(
       boardId,
       ({ id }) => listsApi.deleteList(id),
-      (c, { id }) => ({ lists: c.lists.filter((l) => l.id !== id), cards: c.cards.filter((card) => card.list_id !== id) }),
+      (c, { id }) => ({
+        ...withoutCards(c, new Set(c.cards.filter((card) => card.list_id === id).map((card) => card.id))),
+        lists: c.lists.filter((l) => l.id !== id),
+      }),
       onError,
     ),
     addCard: useOptimistic<{ id: string; listId: string; title: string; position: string }>(
@@ -122,7 +150,7 @@ export function useBoardMutations(boardId: string, onError?: () => void) {
     deleteCard: useOptimistic<{ id: string }>(
       boardId,
       ({ id }) => cardsApi.deleteCard(id),
-      (c, { id }) => ({ ...c, cards: c.cards.filter((x) => x.id !== id) }),
+      (c, { id }) => withoutCards(c, new Set([id])),
       onError,
     ),
   }
