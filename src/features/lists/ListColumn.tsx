@@ -14,6 +14,9 @@ export interface ListColumnProps {
   cards: Card[]
   metaByCard: Map<string, CardMeta>
   canEdit: boolean
+  /** Dragging is paused (e.g. while a filter hides some cards). */
+  dragEnabled: boolean
+  filtering: boolean
   onRename: (title: string) => void
   onDelete: () => void
   onAddCard: (title: string) => void
@@ -33,11 +36,11 @@ export function ListOverlay({ list, count }: { list: List; count: number }) {
   )
 }
 
-export function ListColumn({ list, cards, metaByCard, canEdit, onRename, onDelete, onAddCard, onOpenCard, onDeleteCard }: ListColumnProps) {
+export function ListColumn({ list, cards, metaByCard, canEdit, dragEnabled, filtering, onRename, onDelete, onAddCard, onOpenCard, onDeleteCard }: ListColumnProps) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: list.id,
     data: { type: 'list' },
-    disabled: !canEdit,
+    disabled: !dragEnabled,
   })
   const [confirming, setConfirming] = useState(false)
 
@@ -49,7 +52,7 @@ export function ListColumn({ list, cards, metaByCard, canEdit, onRename, onDelet
       aria-label={list.title}
     >
       <header className="flex items-start gap-1 px-1">
-        {canEdit && (
+        {dragEnabled && (
           <button
             type="button"
             ref={setActivatorNodeRef}
@@ -76,11 +79,12 @@ export function ListColumn({ list, cards, metaByCard, canEdit, onRename, onDelet
               card={card}
               meta={metaByCard.get(card.id) ?? EMPTY_META}
               canEdit={canEdit}
+              dragEnabled={dragEnabled}
               onOpen={() => onOpenCard(card.id)}
               onDelete={() => onDeleteCard(card.id)}
             />
           ))}
-          {cards.length === 0 && <li className="px-1 py-2 text-center text-xs text-slate-400">{t.cards.empty}</li>}
+          {cards.length === 0 && !filtering && <li className="px-1 py-2 text-center text-xs text-slate-400">{t.cards.empty}</li>}
         </ul>
       </SortableContext>
 

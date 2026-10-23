@@ -65,15 +65,16 @@ interface Props {
   card: Card
   meta: CardMeta
   canEdit: boolean
+  dragEnabled: boolean
   onOpen: () => void
   onDelete: () => void
 }
 
-export function CardTile({ card, meta, canEdit, onOpen, onDelete }: Props) {
+export function CardTile({ card, meta, canEdit, dragEnabled, onOpen, onDelete }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
     data: { type: 'card' },
-    disabled: !canEdit,
+    disabled: !dragEnabled,
   })
   const [confirming, setConfirming] = useState(false)
 
@@ -85,7 +86,7 @@ export function CardTile({ card, meta, canEdit, onOpen, onDelete }: Props) {
       {...attributes}
       {...listeners}
     >
-      <div className={`${tileClass} flex items-start gap-1 ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`} onClick={onOpen}>
+      <div className={`${tileClass} flex items-start gap-1 ${dragEnabled ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`} onClick={onOpen}>
         <CardBody card={card} meta={meta} />
         {canEdit && (
           <span className="flex shrink-0 gap-1 text-slate-400">

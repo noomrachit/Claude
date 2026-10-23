@@ -70,6 +70,17 @@ export const t = {
     saveFailed: 'บันทึกไม่สำเร็จ ระบบย้อนกลับการเปลี่ยนแปลงให้แล้ว',
     loadError: 'โหลดลิสต์และการ์ดไม่สำเร็จ',
   },
+  filters: {
+    search: 'ค้นหาการ์ด',
+    labels: 'ป้ายสี',
+    assignees: 'ผู้รับผิดชอบ',
+    noAssignee: 'ยังไม่มีผู้รับผิดชอบ',
+    clear: 'ล้างตัวกรอง',
+    count: (n: number) => `พบ ${n} การ์ด`,
+    noMatches: 'ไม่พบการ์ดที่ตรงกับตัวกรอง',
+    dragOff: 'ปิดการลากชั่วคราวขณะกรองอยู่',
+  },
+  crash: { title: 'เกิดข้อผิดพลาดที่ไม่คาดคิด', reload: 'โหลดหน้าใหม่' },
   detail: {
     description: 'คำอธิบาย',
     descriptionPlaceholder: 'เพิ่มรายละเอียดของงาน…',

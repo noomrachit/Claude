@@ -20,6 +20,8 @@ import { AddItemForm } from '@/components/AddItemForm'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { Spinner } from '@/components/Spinner'
+import { FilterBar } from '@/features/filters/FilterBar'
+import { matchingCardIds, parseFilters, writeFilters, type Filters } from '@/features/filters/filterCards'
 import { useBoardRealtime } from '@/features/realtime/useBoardRealtime'
 import { CardDetailModal } from '@/features/cards/CardDetailModal'
 import { buildCardMeta } from '@/features/cards/cardMeta'
@@ -92,6 +94,16 @@ export function BoardView({ boardId, canEdit, isOwner }: Props) {
     [data, memberOptions],
   )
 
+  const filters = useMemo(() => parseFilters(params), [params])
+  const setFilters = useCallback(
+    (next: Filters) => setParams((p) => writeFilters(p, next), { replace: true }),
+    [setParams],
+  )
+  const visibleIds = useMemo(() => (data ? matchingCardIds(data.cards, metaByCard, filters) : null), [data, metaByCard, filters])
+  const filtering = visibleIds !== null
+  // Reordering while some cards are hidden would be confusing, so dragging pauses during a search.
+  const dragEnabled = canEdit && !filtering
+
   if (isPending) return <Spinner />
   if (isError) return <ErrorBanner message={t.cards.loadError} onRetry={() => void refetch()} />
 
@@ -155,6 +167,12 @@ export function BoardView({ boardId, canEdit, isOwner }: Props) {
       )}
       {lists.length === 0 && <EmptyState title={t.lists.noLists} />}
 
+      {lists.length > 0 && (
+        <FilterBar filters={filters} labels={data.labels} members={memberOptions} matchCount={visibleIds ? visibleIds.size : null} onChange={setFilters} />
+      )}
+      {filtering && canEdit && lists.length > 0 && <p className="text-xs text-slate-500">{t.filters.dragOff}</p>}
+      {filtering && visibleIds.size === 0 && <EmptyState title={t.filters.noMatches} />}
+
       <DndContext
         sensors={sensors}
         collisionDetection={collisionDetection}
@@ -169,7 +187,9 @@ export function BoardView({ boardId, canEdit, isOwner }: Props) {
               <ListColumn
                 key={list.id}
                 list={list}
-                cards={columns[list.id] ?? []}
+                cards={(columns[list.id] ?? []).filter((c) => !visibleIds || visibleIds.has(c.id))}
+                filtering={filtering}
+                dragEnabled={dragEnabled}
                 metaByCard={metaByCard}
                 canEdit={canEdit}
                 onRename={(title) => m.renameList.mutate({ id: list.id, title })}
