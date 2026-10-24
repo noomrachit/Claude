@@ -10,6 +10,18 @@ export interface Change {
   old: Record<string, unknown>
 }
 
+/** Shape of the payload sent by realtime.broadcast_changes() from our database triggers. */
+export interface BroadcastPayload {
+  table: string
+  operation: ChangeType
+  record: Record<string, unknown> | null
+  old_record: Record<string, unknown> | null
+}
+
+export function toChange(p: BroadcastPayload): Change {
+  return { table: p.table, eventType: p.operation, new: p.record ?? {}, old: p.old_record ?? {} }
+}
+
 const isContentTable = (t: string): t is ContentTable => (CONTENT_TABLES as string[]).includes(t)
 
 /** True while one of our own mutations is in flight. */

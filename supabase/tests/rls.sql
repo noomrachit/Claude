@@ -63,7 +63,7 @@ grant execute on all functions in schema t to anon, authenticated;
 -- sanity: schema-level guarantees ------------------------------------------------
 select t.count_is($q$ select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
                       where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity $q$, 0, 'RLS enabled on every public table');
-select t.count_is($q$ select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' $q$, 10, 'realtime publishes 10 tables');
+select t.count_is($q$ select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' $q$, 0, 'no tables published for Postgres Changes any more');
 select t.count_is($q$ select 1 from public.profiles $q$, 2, 'seed trigger created profiles');
 
 -- anon gets nothing ---------------------------------------------------------------
@@ -206,6 +206,41 @@ do $$ begin
 end $$;
 select t.as_user('22222222-2222-2222-2222-222222222222');
 select t.affects($q$ delete from public.board_members where user_id = '22222222-2222-2222-2222-222222222222' $q$, 1, 'member can leave board');
+
+-- realtime broadcast ---------------------------------------------------------------------------
+select t.as_admin();
+delete from realtime.messages;
+insert into public.lists (id, board_id, title, position) values ('bbbbbbbb-0000-0000-0000-0000000000aa', 'aaaaaaaa-0000-0000-0000-000000000001', 'rt', 'a9');
+select t.count_is($q$ select 1 from realtime.messages where topic = 'board:aaaaaaaa-0000-0000-0000-000000000001' and event = 'INSERT'
+                      and payload ->> 'table' = 'lists' and payload -> 'record' ->> 'title' = 'rt' $q$, 1, 'insert is broadcast on the board topic');
+delete from public.lists where id = 'bbbbbbbb-0000-0000-0000-0000000000aa';
+select t.count_is($q$ select 1 from realtime.messages where event = 'DELETE' and payload -> 'old_record' ->> 'board_id' = 'aaaaaaaa-0000-0000-0000-000000000001'
+                      and payload -> 'old_record' ->> 'id' = 'bbbbbbbb-0000-0000-0000-0000000000aa' $q$, 1, 'delete carries the full old row (incl. board_id)');
+select t.count_is($q$ select 1 from realtime.messages where payload ->> 'table' = 'lists' and topic like 'user:%' $q$, 0, 'content changes are not sent to user topics');
+
+delete from realtime.messages;
+insert into public.board_members (board_id, user_id, role) values ('aaaaaaaa-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', 'editor');
+select t.count_is($q$ select 1 from realtime.messages where topic = 'user:22222222-2222-2222-2222-222222222222' and event = 'INSERT' and payload ->> 'table' = 'board_members' $q$, 1, 'membership change notifies that users topic');
+delete from realtime.messages;
+update public.boards set title = 'Website project v2' where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+select t.count_is($q$ select 1 from realtime.messages where topic like 'user:%' and payload ->> 'table' = 'boards' $q$, 4, 'rename notifies every member (alice, bob, carol, dave)');
+
+select t.as_user('22222222-2222-2222-2222-222222222222');
+select set_config('realtime.topic', 'board:aaaaaaaa-0000-0000-0000-000000000001', false);
+-- (the real service delivers only rows of the joined topic; tests mimic that with topic = realtime.topic())
+select t.count_is('select 1 from realtime.messages where topic = realtime.topic()', 1, 'member may receive board topic messages');
+select set_config('realtime.topic', 'user:22222222-2222-2222-2222-222222222222', false);
+select t.count_is('select 1 from realtime.messages where topic = realtime.topic()', 1, 'user may receive their own user topic');
+select set_config('realtime.topic', 'user:11111111-1111-1111-1111-111111111111', false);
+select t.count_is('select 1 from realtime.messages where topic = realtime.topic()', 0, 'user cannot listen to someone elses user topic');
+select t.fails($q$ insert into realtime.messages (topic, event) values ('board:aaaaaaaa-0000-0000-0000-000000000001', 'x') $q$, 'clients cannot send on board topics');
+
+select t.as_user('33333333-3333-3333-3333-333333333333');
+select set_config('realtime.topic', 'board:aaaaaaaa-0000-0000-0000-000000000002', false);
+select t.count_is('select 1 from realtime.messages where topic = realtime.topic()', 0, 'non-member cannot receive another boards topic');
+select set_config('realtime.topic', 'board:not-a-uuid', false);
+select t.count_is('select 1 from realtime.messages where topic = realtime.topic()', 0, 'malformed topic is rejected without error');
+select set_config('realtime.topic', '', false);
 
 select t.as_admin();
 \echo ALL RLS TESTS PASSED
