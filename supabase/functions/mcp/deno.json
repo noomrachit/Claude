@@ -1,0 +1,11 @@
+{
+  "nodeModulesDir": "none",
+  "imports": {
+    "@supabase/functions-js/": "jsr:/@supabase/functions-js@2.5.0/",
+    "@modelcontextprotocol/sdk/": "npm:/@modelcontextprotocol/sdk@1.25.3/",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.118.0",
+    "fractional-indexing": "npm:fractional-indexing@4.0.0",
+    "hono": "npm:hono@4.9.7",
+    "zod": "npm:zod@4.1.13"
+  }
+}
