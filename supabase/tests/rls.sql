@@ -69,7 +69,7 @@ select t.count_is($q$ select 1 from public.profiles $q$, 2, 'seed trigger create
 -- anon gets nothing ---------------------------------------------------------------
 select t.as_anon();
 select t.fails($q$ select * from public.boards $q$, 'anon cannot read boards');
-select t.fails($q$ select public.is_board_member('aaaaaaaa-0000-0000-0000-000000000001') $q$, 'anon cannot call helper functions');
+select t.fails($q$ select private.is_board_member('aaaaaaaa-0000-0000-0000-000000000001') $q$, 'anon cannot reach the private helper schema');
 
 -- a stranger (carol) sees nothing ---------------------------------------------------
 select t.as_admin();
@@ -136,6 +136,23 @@ select t.fails($q$ update public.board_members set role = 'editor' where user_id
 select t.affects($q$ delete from public.boards where id = 'aaaaaaaa-0000-0000-0000-000000000002' $q$, 1, 'owner can delete board (cascade past protected membership)');
 select t.affects($q$ update public.boards set archived_at = now() where id = 'aaaaaaaa-0000-0000-0000-000000000001' $q$, 1, 'owner can archive board');
 select t.affects($q$ update public.boards set archived_at = null, title = 'Website project' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $q$, 1, 'owner can rename/unarchive board');
+
+-- archived boards are read-only for everyone but the owner --------------------------------
+select t.affects($q$ update public.boards set archived_at = now() where id = 'aaaaaaaa-0000-0000-0000-000000000001' $q$, 1, 'owner archives board');
+select t.as_user('22222222-2222-2222-2222-222222222222');
+select t.count_is('select 1 from public.cards', 5, 'editor can still read an archived board');
+select t.fails($q$ insert into public.lists (board_id, title, position) values ('aaaaaaaa-0000-0000-0000-000000000001', 'x', 'a7') $q$, 'editor cannot add list to archived board');
+select t.affects($q$ update public.cards set title = 'blocked' $q$, 0, 'editor cannot edit cards on archived board');
+select t.fails($q$ insert into public.comments (card_id, board_id, body) values ('dddddddd-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'x') $q$, 'editor cannot comment on archived board');
+select t.as_user('11111111-1111-1111-1111-111111111111');
+select t.fails($q$ insert into public.lists (board_id, title, position) values ('aaaaaaaa-0000-0000-0000-000000000001', 'x', 'a7') $q$, 'even the owner cannot edit content while archived');
+select t.affects($q$ update public.boards set archived_at = null where id = 'aaaaaaaa-0000-0000-0000-000000000001' $q$, 1, 'owner can unarchive');
+select t.affects($q$ insert into public.lists (board_id, title, position) values ('aaaaaaaa-0000-0000-0000-000000000001', 'again', 'a7') $q$, 1, 'editing works again after unarchive');
+
+-- helper functions are no longer part of the public API ------------------------------------
+select t.count_is($q$ select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                      where n.nspname = 'public' and p.prosecdef and has_function_privilege('authenticated', p.oid, 'execute') $q$, 1,
+                  'only invite_to_board is an executable SECURITY DEFINER function in public');
 
 -- invitations ----------------------------------------------------------------------
 select t.fails($q$ select public.invite_to_board('aaaaaaaa-0000-0000-0000-000000000001', 'x@y.com', 'owner') $q$, 'cannot invite as owner');

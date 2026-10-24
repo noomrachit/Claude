@@ -476,11 +476,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      board_role_of: {
-        Args: { p_board_id: string }
-        Returns: Database["public"]["Enums"]["board_role"]
-      }
-      can_edit_board: { Args: { p_board_id: string }; Returns: boolean }
       invite_to_board: {
         Args: {
           p_board_id: string
@@ -489,10 +484,6 @@ export type Database = {
         }
         Returns: string
       }
-      is_board_member: { Args: { p_board_id: string }; Returns: boolean }
-      is_board_owner: { Args: { p_board_id: string }; Returns: boolean }
-      shares_board_with: { Args: { p_user_id: string }; Returns: boolean }
-      try_uuid: { Args: { p_text: string }; Returns: string }
     }
     Enums: {
       board_role: "owner" | "editor" | "viewer"
