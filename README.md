@@ -162,11 +162,21 @@ supabase db reset    # รัน migrations + seed.sql
 
 ## Deploy
 
-`npm run build` ได้ไฟล์ static ใน `dist/` นำไปวางบนโฮสต์ static ใดก็ได้ (Netlify, Vercel, Cloudflare Pages ฯลฯ) โดย:
+`npm run build` ได้ไฟล์ static ใน `dist/` นำไปวางบนโฮสต์ static ใดก็ได้ แอปใช้ client-side routing จึงต้องตั้ง rewrite ให้ทุกเส้นทางส่งไป `index.html`
 
-- ตั้งตัวแปร `VITE_SUPABASE_URL` และ `VITE_SUPABASE_ANON_KEY` ตอน build
-- ตั้ง rewrite ให้ทุกเส้นทางส่งไป `index.html` (แอปใช้ client-side routing)
-- เพิ่มโดเมนจริงใน Supabase **Redirect URLs** และ Site URL
+### Vercel
+
+รีโปมี [`vercel.json`](vercel.json) ตั้งค่า build (`npm run build` → `dist/`) และ rewrite ไว้แล้ว
+
+1. ที่ Vercel → **Add New → Project** เลือกรีโปนี้ (Framework Preset: Vite)
+2. **Settings → Environment Variables** เพิ่มทั้ง Production และ Preview:
+   - `VITE_SUPABASE_URL` = `https://<project-ref>.supabase.co`
+   - `VITE_SUPABASE_ANON_KEY` = anon / publishable key
+   ตัวแปร `VITE_*` ถูกฝังตอน build ถ้าเพิ่มหรือแก้ภายหลังต้อง **Redeploy**
+3. ที่ Supabase → **Authentication → URL Configuration**
+   - Site URL: โดเมน production เช่น `https://<project>.vercel.app`
+   - Redirect URLs: เพิ่ม `https://<project>.vercel.app/**` และถ้าใช้ preview deploy เพิ่ม `https://<project>-*-<team>.vercel.app/**`
+4. ถ้าใช้ Google login ไม่ต้องแก้ฝั่ง Google เพราะ redirect URI ของ Google ชี้ไปที่ Supabase (`https://<project-ref>.supabase.co/auth/v1/callback`)
 
 ## ข้อจำกัดที่ทราบ
 
