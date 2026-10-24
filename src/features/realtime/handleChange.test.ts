@@ -2,7 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { describe, expect, it } from 'vitest'
 import { queryKeys } from '@/lib/queryKeys'
 import type { BoardContent } from '@/features/boards/boardContent'
-import { handleChange } from './handleChange'
+import { handleChange, toChange } from './handleChange'
 
 const empty: BoardContent = { lists: [], cards: [], labels: [], cardLabels: [], cardAssignees: [], checklistItems: [] }
 const setup = () => {
@@ -36,5 +36,14 @@ describe('handleChange', () => {
     expect(qc.getQueryState(queryKeys.board('me', 'b'))!.isInvalidated).toBe(false)
     handleChange(qc, 'b', 'me', { table: 'board_members', eventType: 'DELETE', new: {}, old: { user_id: 'me' } }, () => false)
     expect(qc.getQueryState(queryKeys.board('me', 'b'))!.isInvalidated).toBe(true)
+  })
+})
+
+describe('toChange', () => {
+  it('maps a broadcast payload and defaults missing rows to empty objects', () => {
+    expect(toChange({ table: 'cards', operation: 'DELETE', record: null, old_record: { id: 'c1', board_id: 'b' } })).toEqual({
+      table: 'cards', eventType: 'DELETE', new: {}, old: { id: 'c1', board_id: 'b' },
+    })
+    expect(toChange({ table: 'lists', operation: 'INSERT', record: { id: 'l' }, old_record: null }).old).toEqual({})
   })
 })

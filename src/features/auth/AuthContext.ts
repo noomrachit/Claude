@@ -10,6 +10,10 @@ export interface AuthContextValue {
   /** Resolves to an error message, or `{ needsConfirmation }` on success. */
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: string | null; needsConfirmation: boolean }>
   signInWithGoogle: () => Promise<string | null>
+  /** Sends the password-reset email. Resolves to an error message or null. */
+  resetPassword: (email: string) => Promise<string | null>
+  /** Sets a new password for the signed-in (or recovering) user. */
+  updatePassword: (password: string) => Promise<string | null>
   signOut: () => Promise<void>
 }
 

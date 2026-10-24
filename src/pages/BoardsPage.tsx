@@ -7,12 +7,14 @@ import { BoardCard } from '@/features/boards/BoardCard'
 import { CreateBoardForm } from '@/features/boards/CreateBoardForm'
 import { splitBoards } from '@/features/boards/boardsSelectors'
 import { useBoards } from '@/features/boards/hooks'
+import { useBoardsListRealtime } from '@/features/realtime/useBoardsListRealtime'
 import { t } from '@/lib/strings'
 
 type Tab = 'active' | 'archived'
 
 export default function BoardsPage() {
   const { data, isPending, isError, refetch } = useBoards()
+  useBoardsListRealtime()
   const [tab, setTab] = useState<Tab>('active')
   const groups = useMemo(() => splitBoards(data ?? []), [data])
   const list = groups[tab]

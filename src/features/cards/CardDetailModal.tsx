@@ -51,6 +51,7 @@ export function CardDetailModal({ boardId, cardId, content, members, canEdit, is
           canEdit={canEdit}
           onToggle={(labelId, on) => m.toggleLabel.mutate({ cardId, labelId, on })}
           onCreate={(name, color) => m.addLabel.mutate({ id: crypto.randomUUID(), name, color })}
+          onUpdate={(id, name, color) => m.updateLabel.mutate({ id, name, color })}
           onDelete={(id) => m.deleteLabel.mutate({ id })}
         />
         <AssigneesSection members={members} selected={assigneeIds} canEdit={canEdit} onToggle={(userId, on) => m.toggleAssignee.mutate({ cardId, userId, on })} />
@@ -59,6 +60,8 @@ export function CardDetailModal({ boardId, cardId, content, members, canEdit, is
           canEdit={canEdit}
           onAdd={(text) => m.addChecklistItem.mutate({ id: crypto.randomUUID(), cardId, content: text, position: positionAfter(items) })}
           onToggle={(id, done) => m.toggleChecklistItem.mutate({ id, done })}
+          onRename={(id, content) => m.renameChecklistItem.mutate({ id, content })}
+          onMove={(id, position) => m.moveChecklistItem.mutate({ id, position })}
           onDelete={(id) => m.deleteChecklistItem.mutate({ id })}
         />
         <AttachmentsSection boardId={boardId} cardId={cardId} canEdit={canEdit} isOwner={isOwner} userId={user?.id} />

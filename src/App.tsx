@@ -7,6 +7,7 @@ import BoardPage from '@/pages/BoardPage'
 import BoardsPage from '@/pages/BoardsPage'
 import LoginPage from '@/pages/LoginPage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import ResetPasswordPage from '@/pages/ResetPasswordPage'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
@@ -20,6 +21,7 @@ export default function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route element={<ProtectedRoute />}>
                 <Route path="/" element={<BoardsPage />} />
                 <Route path="/boards/:boardId" element={<BoardPage />} />

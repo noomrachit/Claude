@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { t } from '@/lib/strings'
-import { authErrorMessage, validateCredentials } from './authErrors'
+import { authErrorMessage, validateCredentials, validateNewPassword } from './authErrors'
 
 describe('validateCredentials', () => {
   it('accepts a valid pair', () => {
@@ -22,5 +22,16 @@ describe('authErrorMessage', () => {
   it('detects network failures and falls back to a generic message', () => {
     expect(authErrorMessage({ message: 'Failed to fetch' })).toBe(t.auth.errors.network)
     expect(authErrorMessage({ code: 'weird' })).toBe(t.errorGeneric)
+  })
+})
+
+describe('validateNewPassword', () => {
+  it('requires length and matching confirmation', () => {
+    expect(validateNewPassword('short', 'short')).toBe(t.auth.errors.passwordShort)
+    expect(validateNewPassword('longenough', 'different1')).toBe(t.auth.errors.passwordMismatch)
+    expect(validateNewPassword('longenough', 'longenough')).toBeNull()
+  })
+  it('maps same_password', () => {
+    expect(authErrorMessage({ code: 'same_password' })).toBe(t.auth.errors.samePassword)
   })
 })

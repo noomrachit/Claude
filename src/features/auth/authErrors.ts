@@ -3,6 +3,12 @@ import { t } from '@/lib/strings'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export const MIN_PASSWORD_LENGTH = 8
 
+export function validateNewPassword(password: string, confirm: string): string | null {
+  if (password.length < MIN_PASSWORD_LENGTH) return t.auth.errors.passwordShort
+  if (password !== confirm) return t.auth.errors.passwordMismatch
+  return null
+}
+
 export function validateCredentials(email: string, password: string): string | null {
   if (!email.trim()) return t.auth.errors.emailRequired
   if (!EMAIL_RE.test(email.trim())) return t.auth.errors.emailInvalid
@@ -27,6 +33,8 @@ export function authErrorMessage(error: AuthErrorLike): string {
     case 'user_already_exists':
     case 'email_exists':
       return e.alreadyRegistered
+    case 'same_password':
+      return e.samePassword
     case 'weak_password':
       return e.weakPassword
     case 'over_request_rate_limit':

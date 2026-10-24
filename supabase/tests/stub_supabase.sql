@@ -52,3 +52,29 @@ create function storage.foldername(name text) returns text[] language sql immuta
   $$ select string_to_array(name, '/') $$;
 
 create publication supabase_realtime;
+
+-- Realtime: messages table, topic() and broadcast_changes() as the Supabase service provides them.
+create schema if not exists realtime;
+grant usage on schema realtime to authenticated;
+create table realtime.messages (
+  id uuid primary key default gen_random_uuid(),
+  topic text not null,
+  extension text not null default 'broadcast',
+  event text,
+  payload jsonb
+);
+alter table realtime.messages enable row level security;
+grant select on realtime.messages to authenticated;
+create function realtime.topic() returns text language sql stable as
+  $$ select nullif(current_setting('realtime.topic', true), '') $$;
+grant execute on function realtime.topic() to authenticated;
+create function realtime.broadcast_changes(
+  topic_name text, event_name text, operation text, table_name text, table_schema text,
+  new record, old record, level text default 'ROW'
+) returns void language plpgsql as $$
+begin
+  insert into realtime.messages (topic, event, payload)
+  values (topic_name, event_name, jsonb_build_object(
+    'id', gen_random_uuid(), 'schema', table_schema, 'table', table_name,
+    'operation', operation, 'record', to_jsonb(new), 'old_record', to_jsonb(old)));
+end $$;
