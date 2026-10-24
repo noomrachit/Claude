@@ -2,16 +2,16 @@ import { useState, type FormEvent } from 'react'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { isSupabaseConfigured } from '@/lib/supabase/client'
 import { t } from '@/lib/strings'
-import { validateCredentials } from './authErrors'
+import { MIN_PASSWORD_LENGTH, validateCredentials } from './authErrors'
 import { useAuth } from './useAuth'
 
-type Mode = 'login' | 'signup'
+type Mode = 'login' | 'signup' | 'forgot'
 
 const inputClass =
   'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800'
 
 export function LoginForm() {
-  const { signInWithPassword, signUp, signInWithGoogle } = useAuth()
+  const { signInWithPassword, signUp, signInWithGoogle, resetPassword } = useAuth()
   const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -20,8 +20,8 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
-  const switchMode = () => {
-    setMode((m) => (m === 'login' ? 'signup' : 'login'))
+  const goTo = (next: Mode) => {
+    setMode(next)
     setError(null)
     setNotice(null)
   }
@@ -30,12 +30,16 @@ export function LoginForm() {
     e.preventDefault()
     setError(null)
     setNotice(null)
-    const invalid = validateCredentials(email, password)
+    const invalid = mode === 'forgot' ? validateCredentials(email, 'x'.repeat(MIN_PASSWORD_LENGTH)) : validateCredentials(email, password)
     if (invalid) return setError(invalid)
 
     setBusy(true)
     try {
-      if (mode === 'login') {
+      if (mode === 'forgot') {
+        const message = await resetPassword(email)
+        if (message) setError(message)
+        else setNotice(t.auth.resetSent)
+      } else if (mode === 'login') {
         setError(await signInWithPassword(email, password))
       } else {
         const res = await signUp(email, password, displayName)
@@ -66,7 +70,7 @@ export function LoginForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="w-full max-w-sm space-y-4">
-      <h1 className="text-2xl font-semibold">{mode === 'login' ? t.auth.login : t.auth.signup}</h1>
+      <h1 className="text-2xl font-semibold">{mode === 'login' ? t.auth.login : mode === 'signup' ? t.auth.signup : t.auth.forgotTitle}</h1>
 
       {!isSupabaseConfigured && <ErrorBanner message={`${t.setupTitle} — ${t.setupHint}`} />}
       {error && <ErrorBanner message={error} />}
@@ -86,6 +90,7 @@ export function LoginForm() {
         <span>{t.auth.email}</span>
         <input type="email" className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
       </label>
+      {mode !== 'forgot' && (
       <label className="block space-y-1 text-sm">
         <span>{t.auth.password}</span>
         <input
@@ -97,23 +102,33 @@ export function LoginForm() {
           required
         />
       </label>
+      )}
+      {mode === 'login' && (
+        <button type="button" onClick={() => goTo('forgot')} className="text-sm text-blue-600 hover:underline">
+          {t.auth.forgot}
+        </button>
+      )}
 
       <button type="submit" disabled={disabled} className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-        {busy ? t.loading : mode === 'login' ? t.auth.login : t.auth.signup}
+        {busy ? t.loading : mode === 'login' ? t.auth.login : mode === 'signup' ? t.auth.signup : t.auth.sendReset}
       </button>
 
-      <div className="flex items-center gap-3 text-xs text-slate-500">
-        <hr className="flex-1 border-slate-300 dark:border-slate-700" />
-        {t.auth.or}
-        <hr className="flex-1 border-slate-300 dark:border-slate-700" />
-      </div>
+      {mode !== 'forgot' && (
+        <>
+          <div className="flex items-center gap-3 text-xs text-slate-500">
+            <hr className="flex-1 border-slate-300 dark:border-slate-700" />
+            {t.auth.or}
+            <hr className="flex-1 border-slate-300 dark:border-slate-700" />
+          </div>
 
-      <button type="button" onClick={onGoogle} disabled={disabled} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:hover:bg-slate-800">
-        {t.auth.google}
-      </button>
+          <button type="button" onClick={onGoogle} disabled={disabled} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:hover:bg-slate-800">
+            {t.auth.google}
+          </button>
+        </>
+      )}
 
-      <button type="button" onClick={switchMode} className="w-full text-center text-sm text-blue-600 hover:underline">
-        {mode === 'login' ? t.auth.noAccount : t.auth.haveAccount}
+      <button type="button" onClick={() => goTo(mode === 'login' ? 'signup' : 'login')} className="w-full text-center text-sm text-blue-600 hover:underline">
+        {mode === 'login' ? t.auth.noAccount : mode === 'signup' ? t.auth.haveAccount : t.auth.backToLogin}
       </button>
     </form>
   )

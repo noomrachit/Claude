@@ -33,6 +33,9 @@ export function FilterBar({ filters, labels, members, matchCount, onChange }: Pr
   }
 
   const active = isFiltering(filters) || text !== ''
+  // On narrow screens the chip rows fold behind a toggle; on sm+ they are always visible.
+  const [open, setOpen] = useState(false)
+  const chipCount = filters.labelIds.length + filters.assigneeIds.length
 
   return (
     <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
@@ -45,6 +48,11 @@ export function FilterBar({ filters, labels, members, matchCount, onChange }: Pr
           aria-label={t.filters.search}
           onChange={(e) => setText(e.target.value)}
         />
+        {(labels.length > 0 || members.length > 0) && (
+          <button type="button" className={`${btnClass} sm:hidden`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+            {t.filters.toggle}{chipCount > 0 ? ` (${chipCount})` : ''}
+          </button>
+        )}
         {active && (
           <button type="button" className={btnClass} onClick={() => { setText(''); onChange({ q: '', labelIds: [], assigneeIds: [] }) }}>
             {t.filters.clear}
@@ -53,6 +61,7 @@ export function FilterBar({ filters, labels, members, matchCount, onChange }: Pr
         {matchCount !== null && <span role="status" className="text-sm text-slate-500">{t.filters.count(matchCount)}</span>}
       </div>
 
+      <div className={`space-y-2 ${open ? '' : 'hidden sm:block'}`}>
       {labels.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t.filters.labels}>
           <span className="text-xs text-slate-500">{t.filters.labels}</span>
@@ -89,6 +98,7 @@ export function FilterBar({ filters, labels, members, matchCount, onChange }: Pr
           </button>
         </div>
       )}
+      </div>
     </div>
   )
 }

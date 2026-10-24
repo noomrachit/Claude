@@ -6,6 +6,10 @@ export async function insertLabel(label: Insert<'labels'>) {
   const { error } = await supabase.from('labels').insert(label)
   if (error) throw error
 }
+export async function updateLabel(id: string, patch: { name: string; color: string }) {
+  const { error } = await supabase.from('labels').update(patch).eq('id', id)
+  if (error) throw error
+}
 export async function deleteLabel(id: string) {
   const { error } = await supabase.from('labels').delete().eq('id', id)
   if (error) throw error
@@ -36,6 +40,10 @@ export async function insertChecklistItem(item: Insert<'checklist_items'>) {
 }
 export async function setChecklistDone(id: string, done: boolean) {
   const { error } = await supabase.from('checklist_items').update({ done }).eq('id', id)
+  if (error) throw error
+}
+export async function updateChecklistItem(id: string, patch: { content?: string; position?: string }) {
+  const { error } = await supabase.from('checklist_items').update(patch).eq('id', id)
   if (error) throw error
 }
 export async function deleteChecklistItem(id: string) {

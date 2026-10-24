@@ -1,5 +1,5 @@
 import { arrayMove } from '@dnd-kit/sortable'
-import { byPosition, positionAtIndex } from '@/lib/position'
+import { byPosition, positionAtIndex, reorderedPosition } from '@/lib/position'
 import type { Card, List } from '@/types'
 
 /** Cards grouped by list id, each group sorted by position. */
@@ -64,11 +64,5 @@ export function resolveCardDrop(
 }
 
 /** Reorders lists: returns the new position key for `activeId` dropped on `overId`, or null if unchanged. */
-export function resolveListDrop(lists: List[], activeId: string, overId: string): string | null {
-  const oldIndex = lists.findIndex((l) => l.id === activeId)
-  const newIndex = lists.findIndex((l) => l.id === overId)
-  if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return null
-  const ordered = arrayMove(lists, oldIndex, newIndex)
-  const rest = ordered.filter((l) => l.id !== activeId)
-  return positionAtIndex(rest, newIndex)
-}
+export const resolveListDrop = (lists: List[], activeId: string, overId: string): string | null =>
+  reorderedPosition(lists, activeId, overId)

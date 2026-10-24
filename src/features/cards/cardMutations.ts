@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useOptimistic, type BoardContent } from '@/features/boards/boardContent'
 import * as cardsApi from '@/features/cards/api'
+import { byPosition } from '@/lib/position'
 import * as api from './detailApi'
 
 const nowIso = () => new Date().toISOString()
@@ -36,6 +37,12 @@ export function useCardDetailMutations(boardId: string, onError?: () => void) {
       boardId,
       ({ id, name, color }) => api.insertLabel({ id, board_id: boardId, name, color }),
       (c, { id, name, color }) => ({ ...c, labels: [...c.labels, { id, board_id: boardId, name, color, created_at: nowIso() }] }),
+      onError,
+    ),
+    updateLabel: useOptimistic<{ id: string; name: string; color: string }>(
+      boardId,
+      ({ id, name, color }) => api.updateLabel(id, { name, color }),
+      (c, { id, name, color }) => ({ ...c, labels: c.labels.map((l) => (l.id === id ? { ...l, name, color } : l)) }),
       onError,
     ),
     deleteLabel: useOptimistic<{ id: string }>(
@@ -81,6 +88,21 @@ export function useCardDetailMutations(boardId: string, onError?: () => void) {
       boardId,
       ({ id, done }) => api.setChecklistDone(id, done),
       (c, { id, done }) => ({ ...c, checklistItems: c.checklistItems.map((i) => (i.id === id ? { ...i, done } : i)) }),
+      onError,
+    ),
+    renameChecklistItem: useOptimistic<{ id: string; content: string }>(
+      boardId,
+      ({ id, content }) => api.updateChecklistItem(id, { content }),
+      (c, { id, content }) => ({ ...c, checklistItems: c.checklistItems.map((i) => (i.id === id ? { ...i, content } : i)) }),
+      onError,
+    ),
+    moveChecklistItem: useOptimistic<{ id: string; position: string }>(
+      boardId,
+      ({ id, position }) => api.updateChecklistItem(id, { position }),
+      (c, { id, position }) => ({
+        ...c,
+        checklistItems: c.checklistItems.map((i) => (i.id === id ? { ...i, position } : i)).sort(byPosition),
+      }),
       onError,
     ),
     deleteChecklistItem: useOptimistic<{ id: string }>(
