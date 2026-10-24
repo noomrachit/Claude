@@ -94,6 +94,16 @@ export const t = {
     noMatches: 'ไม่พบการ์ดที่ตรงกับตัวกรอง',
     dragOff: 'ปิดการลากชั่วคราวขณะกรองอยู่',
   },
+  mcp: {
+    title: 'เชื่อมต่อ Claude (MCP)',
+    intro: 'ให้ Claude อ่านและแก้บอร์ดของคุณผ่าน Edge Function `mcp` สิทธิ์เท่ากับบัญชีของคุณ (ตาม RLS)',
+    endpoint: 'URL ของเซิร์ฟเวอร์',
+    copyToken: 'คัดลอก access token',
+    copied: 'คัดลอกแล้ว',
+    expires: (time: string) => `token นี้หมดอายุเวลา ${time} ต้องคัดลอกใหม่หลังจากนั้น`,
+    warning: 'อย่าแชร์ token นี้ ผู้ที่มี token ทำทุกอย่างได้เหมือนคุณจนกว่าจะหมดอายุ',
+    command: 'คำสั่งเพิ่มใน Claude Code',
+  },
   crash: { title: 'เกิดข้อผิดพลาดที่ไม่คาดคิด', reload: 'โหลดหน้าใหม่' },
   detail: {
     description: 'คำอธิบาย',

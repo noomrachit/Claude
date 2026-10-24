@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { AppHeader } from '@/components/AppHeader'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorBanner } from '@/components/ErrorBanner'
+import { McpPanel } from '@/components/McpPanel'
 import { Spinner } from '@/components/Spinner'
 import { BoardCard } from '@/features/boards/BoardCard'
 import { CreateBoardForm } from '@/features/boards/CreateBoardForm'
@@ -51,6 +52,7 @@ export default function BoardsPage() {
             {list.map((b) => <BoardCard key={b.id} board={b} />)}
           </ul>
         )}
+        <McpPanel />
       </main>
     </>
   )

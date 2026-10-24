@@ -42,6 +42,7 @@ src/
   types/           ชื่อย่อของชนิดข้อมูลตาราง
 supabase/
   migrations/      สคีมา, RLS, ดัชนี + Storage, ความปลอดภัยเพิ่มเติม, Realtime (Broadcast)
+  functions/mcp/   MCP server บน Edge Functions (ดูหัวข้อ "เชื่อมต่อ Claude ผ่าน MCP")
   seed.sql         ข้อมูลตัวอย่างสำหรับพัฒนา (ห้ามใช้บนโปรดักชัน)
   tests/           ทดสอบ RLS บน Postgres ชั่วคราว
 ```
@@ -183,6 +184,36 @@ supabase db reset    # รัน migrations + seed.sql
 - คำเชิญสำหรับอีเมลที่ยังไม่สมัครจะถูกบันทึกไว้และให้สิทธิ์เมื่อยืนยันอีเมล แต่ **ระบบไม่ส่งอีเมลแจ้งเชิญ** เจ้าของต้องแจ้งผู้ถูกเชิญเอง
 - ขณะกรองอยู่จะปิดการลากชั่วคราว
 - บอร์ดจะโหลดการ์ดทั้งหมดในครั้งเดียว (ยังไม่มี pagination)
+
+## เชื่อมต่อ Claude ผ่าน MCP (ไม่บังคับ)
+
+`supabase/functions/mcp/` เป็นเซิร์ฟเวอร์ [MCP](https://modelcontextprotocol.io) บน Supabase Edge Functions ให้ Claude (หรือ MCP client อื่น) อ่านและแก้บอร์ดได้
+
+**เครื่องมือ:** `list_boards`, `get_board`, `search_cards`, `create_card`, `update_card`, `move_card`, `add_comment`
+
+**ความปลอดภัย:** ทุกคำขอต้องมี `Authorization: Bearer <access token ของผู้ใช้>` ฟังก์ชันเรียกฐานข้อมูลในนามผู้ใช้คนนั้นด้วย publishable key จึงอยู่ใต้ RLS เดียวกับแอป ไม่ใช้ secret / `service_role` key
+
+**Deploy** (ในโฟลเดอร์รีโป)
+
+```bash
+supabase link --project-ref <project-ref>
+supabase functions deploy mcp
+```
+
+อย่าใส่ `--no-verify-jwt` เพราะฟังก์ชันนี้ต้องการผู้ใช้ที่ล็อกอินแล้ว
+
+**เชื่อมกับ Claude Code**
+
+1. เปิดแอป → หน้า "บอร์ดของฉัน" → "เชื่อมต่อ Claude (MCP)" → คัดลอก access token
+2. รัน
+   ```bash
+   claude mcp add --transport http kanban https://<project-ref>.supabase.co/functions/v1/mcp \
+     --header "Authorization: Bearer <access token>"
+   ```
+
+**ข้อจำกัด:** access token ของ Supabase Auth หมดอายุภายในประมาณ 1 ชั่วโมง (ตามค่า JWT expiry ของโปรเจกต์) หลังจากนั้นต้องคัดลอก token ใหม่และอัปเดต header อย่าแชร์ token เพราะใช้แทนบัญชีของคุณได้จนกว่าจะหมดอายุ
+
+**ทดสอบในเครื่อง:** `npm run test` ทดสอบฟังก์ชันช่วยใน `lib.ts` ส่วน `deno check supabase/functions/mcp/index.ts` ตรวจชนิดข้อมูล (ต้องมี Deno)
 
 ## CI
 
