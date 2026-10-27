@@ -3,6 +3,13 @@
     "supabase": {
       "type": "http",
       "url": "https://mcp.supabase.com/mcp?project_ref=gubvyjpueroercmkwvno&read_only=true&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching"
+    },
+    "kanban": {
+      "type": "http",
+      "url": "https://lzpdklkvjyizlpqglehh.supabase.co/functions/v1/mcp",
+      "headers": {
+        "Authorization": "Bearer ${KANBAN_TOKEN}"
+      }
     }
   }
 }
