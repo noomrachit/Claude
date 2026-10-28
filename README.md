@@ -204,7 +204,18 @@ supabase functions deploy mcp
 
 **เชื่อมกับ Claude Code**
 
+รีโปมี `.mcp.json` ที่ตั้งเซิร์ฟเวอร์ไว้ 2 ตัว:
+- `kanban` เรียก Edge Function `mcp` ของโปรเจกต์ (อ่าน token จากตัวแปร `KANBAN_TOKEN`)
+- `supabase` เซิร์ฟเวอร์ MCP ทางการของ Supabase แบบอ่านอย่างเดียว (docs, database, debugging) ล็อกอินผ่าน OAuth ตอนเชื่อมต่อครั้งแรก
+
+ใช้ `kanban` จาก `.mcp.json`:
+
 1. เปิดแอป → หน้า "บอร์ดของฉัน" → "เชื่อมต่อ Claude (MCP)" → คัดลอก access token
+2. `export KANBAN_TOKEN=<access token>` แล้วเปิด `claude` ในโฟลเดอร์รีโป และอนุมัติเซิร์ฟเวอร์
+
+หรือเพิ่มเองโดยไม่ใช้ `.mcp.json`:
+
+1. คัดลอก access token แบบเดียวกัน
 2. รัน
    ```bash
    claude mcp add --transport http kanban https://<project-ref>.supabase.co/functions/v1/mcp \
